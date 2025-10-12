@@ -1,2 +1,0 @@
-# Mini-Event-Ticketing-System
-
