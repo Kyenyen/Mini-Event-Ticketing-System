@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laravel + Vue</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Event Ticketing System</title>
     @vite('resources/js/app.js')
-</head>
-<body class="antialiased">
+  </head>
+  <body class="bg-gray-100">
     <div id="app"></div>
-</body>
+  </body>
 </html>
