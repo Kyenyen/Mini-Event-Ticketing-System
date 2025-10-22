@@ -1,4 +1,5 @@
 import './bootstrap'
+import '../css/app.css' // <-- ensure CSS is imported so Vite bundles Tailwind + your custom styles
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
