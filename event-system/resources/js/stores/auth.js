@@ -3,16 +3,23 @@ import axios from '../axios'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: null,
+    user: JSON.parse(localStorage.getItem('user')) || null, // load from localStorage
+    token: localStorage.getItem('token') || null,
   }),
 
   actions: {
     async getUser() {
       try {
-        const res = await axios.get('/api/user')
-        this.user = res.data
-      } catch {
-        this.user = null
+        const token = localStorage.getItem('token')
+        if (!token) return
+
+        const response = await axios.get('http://127.0.0.1:8000/api/user', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        this.user = response.data
+        localStorage.setItem('user', JSON.stringify(this.user))
+      } catch (err) {
+        this.logout()
       }
     },
 
