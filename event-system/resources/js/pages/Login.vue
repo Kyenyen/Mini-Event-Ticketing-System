@@ -40,15 +40,17 @@
 import axios from "axios";
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { useAuthStore } from '../stores/auth'
 
 const router = useRouter();
+const auth = useAuthStore()
 
 const form = ref({
   email: "",
   password: "",
 });
 
-const error = ref("");
+const error = ref(""); 
 const success = ref("");
 
 async function login() {
@@ -58,9 +60,10 @@ async function login() {
   try {
     const response = await axios.post("http://127.0.0.1:8000/api/login", form.value);
 
-    // Save the token
+    // Save the token and user, and update Pinia store so Navbar updates immediately
     localStorage.setItem("token", response.data.token);
     localStorage.setItem("user", JSON.stringify(response.data.user));
+    auth.user = response.data.user; // <-- update store used by Navbar
 
     success.value = "Login successful! Redirecting...";
     setTimeout(() => router.push("/"), 1000);

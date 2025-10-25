@@ -11,6 +11,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 });
 
+Route::middleware('auth:sanctum')->post('/change-password', [AuthController::class, 'changePassword']);
+
 // Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
 //     Route::get('/admin/dashboard', [AdminController::class, 'index']);
 // });

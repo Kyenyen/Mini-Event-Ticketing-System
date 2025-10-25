@@ -22,7 +22,7 @@
         <!-- Right: Profile / Auth actions -->
         <div class="flex items-center space-x-4">
           <template v-if="user">
-            <div class="relative" @click.outside="open = false">
+            <div class="relative" ref="menuRef">
               <button @click="open = !open" class="flex items-center gap-2 px-3 py-1 rounded-md hover:bg-gray-100">
                 <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700">
                   {{ initials }}
@@ -37,8 +37,18 @@
               </button>
 
               <div v-if="open" class="absolute right-0 mt-2 w-44 bg-white border rounded-md shadow-lg py-1 z-20">
-                <router-link to="/profile" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</router-link>
-                <button @click="handleLogout" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Logout</button>
+                <router-link
+                  to="/change-password"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                >
+                  Change Password
+                </router-link>
+                <button
+                  @click="handleLogout"
+                  class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                >
+                  Logout
+                </button>
               </div>
             </div>
           </template>
@@ -54,13 +64,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
 const open = ref(false)
+const menuRef = ref(null)
 
 const user = computed(() => auth.user)
 
@@ -74,7 +85,18 @@ onMounted(async () => {
   if (!auth.user) {
     await auth.getUser().catch(() => {})
   }
+  document.addEventListener('click', handleOutsideClick)
 })
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleOutsideClick)
+})
+
+function handleOutsideClick(e) {
+  if (open.value && menuRef.value && !menuRef.value.contains(e.target)) {
+    open.value = false
+  }
+}
 
 async function handleLogout() {
   await auth.logout().catch(() => {})
