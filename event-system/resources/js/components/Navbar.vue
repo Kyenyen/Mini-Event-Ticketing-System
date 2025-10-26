@@ -15,7 +15,7 @@
         <!-- Center: optional nav links -->
         <div class="hidden md:flex items-center space-x-6">
           <router-link to="/" class="text-gray-600 hover:text-gray-900">Home</router-link>
-          <router-link to="/" class="text-gray-600 hover:text-gray-900">Events</router-link>
+          <router-link to="/events" class="text-gray-600 hover:text-gray-900">Events</router-link>
           <router-link to="/" class="text-gray-600 hover:text-gray-900">About</router-link>
         </div>
 

@@ -9,6 +9,14 @@ class Event extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'title',
+        'description',
+        'date',
+        'location',
+        'capacity',
+    ];
+
     public function isFull(): bool
     {
         $capacity = $this->capacity ?? 0;

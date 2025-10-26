@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\RsvpController;
 use App\Http\Controllers\SeatController;
+use App\Http\Controllers\EventController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -17,6 +18,16 @@ Route::middleware('auth:sanctum')->post('/change-password', [AuthController::cla
 
 Route::middleware('auth:sanctum')->post('/events/{event}/rsvp', [RsvpController::class, 'rsvp']);
 Route::post('/events/{event}/rsvp/guest', [RsvpController::class, 'rsvp']);
+
+Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
+    Route::post('/events', [EventController::class, 'store']);
+    Route::put('/events/{event}', [EventController::class, 'update']);
+    Route::delete('/events/{event}', [EventController::class, 'destroy']);
+});
+
+// Public endpoints
+Route::get('/events', [EventController::class, 'index']);
+Route::get('/events/{event}', [EventController::class, 'show']);
 
 Route::get('/events/{event}/seats', [SeatController::class, 'index']);
 
