@@ -8,51 +8,72 @@
       ← Back to Events
     </button>
 
+    <!-- ✅ Admin Edit/Delete controls at the top -->
+    <div v-if="user?.role === 'admin'" class="flex justify-end gap-3 mb-4">
+      <button
+        @click="editEvent"
+        class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition"
+      >
+        ✏️ Edit
+      </button>
+      <button
+        @click="deleteEvent"
+        :disabled="deleting"
+        class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition disabled:opacity-60"
+      >
+        {{ deleting ? "Deleting..." : "🗑️ Delete" }}
+      </button>
+    </div>
+
     <!-- Event Info -->
     <div>
       <h2 class="text-3xl font-semibold mb-2">{{ event.title }}</h2>
       <p class="text-gray-600 mb-4">{{ event.description }}</p>
 
       <div class="text-sm text-gray-500 mb-6 space-y-1">
-        <p>
-          📅 <strong>Date:</strong> {{ formattedDate }}
-        </p>
-        <p>
-          📍 <strong>Location:</strong> {{ event.location }}
-        </p>
-        <p>
-          🎟️ <strong>Capacity:</strong> {{ event.capacity }}
-        </p>
+        <p>📅 <strong>Date:</strong> {{ formattedDate }}</p>
+        <p>📍 <strong>Location:</strong> {{ event.location }}</p>
+        <p>🎟️ <strong>Capacity:</strong> {{ event.capacity }}</p>
       </div>
     </div>
 
-    <!-- Buttons -->
-    <div class="flex justify-between items-center">
-      <!-- RSVP for users -->
-      <button
-        v-if="!user?.role || user?.role === 'user'"
-        @click="rsvpEvent"
-        :disabled="rsvping"
-        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition disabled:opacity-50"
-      >
-        {{ rsvping ? "Confirming..." : "RSVP Now" }}
-      </button>
+    <!-- Seat Management or RSVP -->
+    <div class="flex justify-center items-center">
+      <!-- User RSVP -->
+      <div v-if="!user?.role || user?.role === 'user'" class="space-y-4 w-full text-center">
+        <button
+          v-if="!showSeatPicker"
+          @click="showSeatPicker = true"
+          class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+        >
+          🎟️ RSVP Now
+        </button>
 
-      <!-- Admin controls -->
-      <div v-if="user?.role === 'admin'" class="flex gap-2">
+        <!-- Seat Picker for users -->
+        <SeatPicker
+          v-if="showSeatPicker"
+          :eventId="event.id"
+          @seat-selected="handleSeatSelected"
+          @cancel="showSeatPicker = false"
+        />
+      </div>
+
+      <!-- Admin seat management -->
+      <div v-if="user?.role === 'admin'" class="space-y-4 w-full text-center">
         <button
-          @click="editEvent"
-          class="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600 transition"
+          v-if="!showSeatPicker"
+          @click="showSeatPicker = true"
+          class="bg-yellow-500 text-white px-6 py-2 rounded hover:bg-yellow-600 transition"
         >
-          Edit
+          🪑 Manage Seats
         </button>
-        <button
-          @click="deleteEvent"
-          :disabled="deleting"
-          class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition disabled:opacity-60"
-        >
-          {{ deleting ? "Deleting..." : "Delete" }}
-        </button>
+
+        <SeatPicker
+          v-if="showSeatPicker"
+          :eventId="event.id"
+          :isAdmin="true"
+          @cancel="showSeatPicker = false"
+        />
       </div>
     </div>
   </div>
@@ -63,17 +84,22 @@ import { ref, onMounted, computed } from "vue";
 import axios from "axios";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
+import SeatPicker from "../components/SeatPicker.vue";
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+const showSeatPicker = ref(false);
 
 const event = ref({});
-const rsvping = ref(false);
 const deleting = ref(false);
 const user = computed(() => auth.user);
 
-// Format the date nicely with day name
+onMounted(async () => {
+  const { data } = await axios.get(`http://127.0.0.1:8000/api/events/${route.params.id}`);
+  event.value = data;
+});
+
 const formattedDate = computed(() => {
   if (!event.value.date) return "";
   const d = new Date(event.value.date);
@@ -84,36 +110,6 @@ const formattedDate = computed(() => {
     day: "numeric",
   });
 });
-
-onMounted(async () => {
-  const { data } = await axios.get(`http://127.0.0.1:8000/api/events/${route.params.id}`);
-  event.value = data;
-});
-
-async function rsvpEvent() {
-  rsvping.value = true;
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("Please log in to RSVP.");
-      router.push("/login");
-      return;
-    }
-
-    await axios.post(
-      `http://127.0.0.1:8000/api/events/${event.value.id}/rsvp`,
-      {},
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    alert("RSVP confirmed!");
-  } catch (error) {
-    console.error(error);
-    alert(error.response?.data?.message || "Failed to RSVP.");
-  } finally {
-    rsvping.value = false;
-  }
-}
 
 function editEvent() {
   router.push(`/events/${event.value.id}/edit`);
@@ -133,6 +129,29 @@ async function deleteEvent() {
     alert(error.response?.data?.message || "Failed to delete event.");
   } finally {
     deleting.value = false;
+  }
+}
+
+async function handleSeatSelected(seat) {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please log in to RSVP.");
+      router.push("/login");
+      return;
+    }
+
+    await axios.post(
+      `http://127.0.0.1:8000/api/events/${event.value.id}/rsvp`,
+      { seat_id: seat.id },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    alert(`RSVP confirmed for seat ${seat.label}!`);
+    showSeatPicker.value = false;
+  } catch (error) {
+    console.error(error);
+    alert(error.response?.data?.message || "Failed to RSVP.");
   }
 }
 </script>
