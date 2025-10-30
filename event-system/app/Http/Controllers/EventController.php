@@ -53,7 +53,7 @@ class EventController extends Controller
         return response()->json(['message' => 'Event deleted']);
     }
 
-        private function generateSeats(Event $event)
+    private function generateSeats(Event $event)
     {
         $capacity = min($event->capacity, 100);
 

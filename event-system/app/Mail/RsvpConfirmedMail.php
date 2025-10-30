@@ -2,10 +2,10 @@
 
 namespace App\Mail;
 
-use App\Models\Rsvp;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use App\Models\Rsvp;
 
 class RsvpConfirmedMail extends Mailable
 {
@@ -13,22 +13,25 @@ class RsvpConfirmedMail extends Mailable
 
     public $rsvp;
 
-    /**
-     * Create a new message instance.
-     */
     public function __construct(Rsvp $rsvp)
     {
         $this->rsvp = $rsvp;
     }
 
-    /**
-     * Build the message.
-     */
     public function build()
     {
-        return $this->subject('Your RSVP Confirmation')
-                    ->markdown('emails.rsvp.confirmed', [
-                        'rsvp' => $this->rsvp,
+        $event = $this->rsvp->event;
+        $userName = $this->rsvp->guest_name ?? $this->rsvp->user->name;
+        $seatLabel = $this->rsvp->seat->label ?? 'Assigned by system';
+
+        return $this->subject('RSVP Confirmed: ' . $event->title)
+                    ->markdown('emails.rsvp.confirmed')
+                    ->with([
+                        'eventTitle' => $event->title,
+                        'eventDate' => $event->date,
+                        'eventLocation' => $event->location,
+                        'userName' => $userName,
+                        'seatLabel' => $seatLabel,
                     ]);
     }
 }

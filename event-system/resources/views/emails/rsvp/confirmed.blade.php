@@ -1,20 +1,26 @@
 @component('mail::message')
-# 🎟 RSVP Confirmed
+# 🎉 RSVP Confirmed!
 
-Hi {{ $rsvp->guest_name ?? $rsvp->user->name }},
+Hello {{ $userName }},
 
-Your RSVP for **{{ $rsvp->event->title }}** has been confirmed!
+Your RSVP for **{{ $eventTitle }}** has been successfully confirmed!
+
+---
 
 **Event Details:**
-- 📅 Date: {{ $rsvp->event->date->format('F j, Y') }}
-- 📍 Location: {{ $rsvp->event->location }}
-- 🪑 Status: {{ ucfirst($rsvp->status) }}
+- 📅 Date: {{ \Carbon\Carbon::parse($eventDate)->format('l, F j, Y') }}
+- 📍 Location: {{ $eventLocation }}
+- 🪑 Seat: {{ $seatLabel }}
+- 🏷️ Status: Confirmed
 
-@component('mail::button', ['url' => url('/')])
-View Event
+---
+
+@component('mail::button', ['url' => config('app.url') . '/events'])
+View Event Details
 @endcomponent
 
-Thanks for your RSVP!  
-See you at the event 🎉  
-{{ config('app.name') }}
+Thank you for joining us — we can’t wait to see you there!
+
+Regards,  
+**{{ config('app.name') }} Team**
 @endcomponent

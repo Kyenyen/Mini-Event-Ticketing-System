@@ -28,12 +28,11 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::put('/seats/{seat}/unblock', [SeatController::class, 'unblock']);
 });
 
+Route::post('/events/{event}/guest-rsvp', [RsvpController::class, 'guestRsvp']);
+
 // Public endpoints
 Route::get('/events', [EventController::class, 'index']);
 Route::get('/events/{event}', [EventController::class, 'show']);
 
 Route::get('/events/{event}/seats', [SeatController::class, 'index']);
 
-// Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
-//     Route::get('/admin/dashboard', [AdminController::class, 'index']);
-// });

@@ -11,6 +11,7 @@ class Rsvp extends Model
 
     protected $fillable = [
         'event_id',
+        'seat_id',
         'user_id',
         'guest_name',
         'guest_email',
@@ -25,5 +26,10 @@ class Rsvp extends Model
     public function event()
     {
         return $this->belongsTo(Event::class);
+    }
+
+    public function seat()
+    {
+        return $this->belongsTo(Seat::class);
     }
 }
