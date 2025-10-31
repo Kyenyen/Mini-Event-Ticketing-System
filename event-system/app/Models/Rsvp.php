@@ -11,10 +11,11 @@ class Rsvp extends Model
 
     protected $fillable = [
         'event_id',
-        'seat_id',
         'user_id',
+        'email',
         'guest_name',
         'guest_email',
+        'seat_id',
         'status',
     ];
 

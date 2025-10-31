@@ -19,7 +19,7 @@ class RsvpController extends Controller
             'seat_id' => 'required|exists:seats,id',
         ]);
 
-        // 🔒 Get the selected seat
+        // 🔒 Get the selected seat for this event
         $seat = Seat::where('id', $request->seat_id)
             ->where('event_id', $event->id)
             ->firstOrFail();
@@ -33,13 +33,20 @@ class RsvpController extends Controller
         $seat->update(['status' => 'processing']);
 
         try {
-            // 🧍‍♂️ Handle RSVP based on login status
             if (Auth::check()) {
+                // 🧍‍♂️ Logged-in user RSVP
+                $user = Auth::user(); // ✅ define the variable first
+
                 $rsvp = Rsvp::updateOrCreate(
-                    ['event_id' => $event->id, 'user_id' => Auth::id()],
-                    ['seat_id' => $seat->id, 'status' => 'confirmed']
+                    ['event_id' => $event->id, 'user_id' => $user->id],
+                    [
+                        'seat_id' => $seat->id,
+                        'email' => $user->email, // ✅ store user’s email
+                        'status' => 'confirmed',
+                    ]
                 );
             } else {
+                // 🧍 Guest RSVP
                 $request->validate([
                     'guest_name' => 'required|string|max:255',
                     'guest_email' => 'required|email|max:255',
@@ -60,7 +67,7 @@ class RsvpController extends Controller
 
             // 📧 Send confirmation email
             try {
-                Mail::to($rsvp->guest_email ?? $rsvp->user->email)
+                Mail::to($rsvp->guest_email ?? $rsvp->email)
                     ->send(new RsvpConfirmedMail($rsvp));
             } catch (\Throwable $e) {
                 Log::error('RSVP Mail failed: ' . $e->getMessage());
@@ -137,5 +144,89 @@ class RsvpController extends Controller
             'seat' => $rsvp->seat,
             'seat_number' => $rsvp->seat->label,
         ], 201);
+    }
+
+    public function index(Request $request)
+    {
+        $user = $request->user();
+
+        // Admin sees all RSVPs
+        if ($user->role === 'admin') {
+            $rsvps = Rsvp::with(['event', 'seat', 'user'])->get();
+        } else {
+            // User sees only their own RSVPs
+            $rsvps = Rsvp::with(['event', 'seat'])
+                ->where('user_id', $user->id)
+                ->get();
+        }
+
+        // Map results so that frontend always has a 'name' and 'email'
+        $rsvps = $rsvps->map(function ($rsvp) {
+            return [
+                'id' => $rsvp->id,
+                'event' => [
+                    'id' => $rsvp->event->id ?? null,
+                    'title' => $rsvp->event->title ?? 'Unknown Event',
+                    'date' => $rsvp->event->date ?? null,
+                    'location' => $rsvp->event->location ?? null,
+                ],
+                'seat' => [
+                    'id' => $rsvp->seat->id ?? null,
+                    'label' => $rsvp->seat->label ?? 'N/A',
+                ],
+                'status' => $rsvp->status,
+                'name' => $rsvp->guest_name ?? $rsvp->user->name ?? 'N/A',
+                'email' => $rsvp->guest_email ?? $rsvp->user->email ?? 'N/A',
+            ];
+        });
+
+        return response()->json($rsvps);
+    }
+
+    public function show(Rsvp $rsvp)
+    {
+        // Authorization check
+        if (Auth::user()->role !== 'admin' && $rsvp->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized');
+        }
+
+        $rsvp->load(['event', 'seat']);
+
+        return response()->json([
+            'rsvp' => $rsvp,
+            'event' => [
+                'name' => $rsvp->event->name,
+                'location' => $rsvp->event->location,
+                'date' => $rsvp->event->date,
+            ],
+            'seat' => $rsvp->seat->label ?? 'N/A',
+            'status' => $rsvp->status,
+        ]);
+    }
+
+    public function cancel(Rsvp $rsvp)
+    {
+        // Only admin or the user who owns it can cancel
+        if (Auth::user()->role !== 'admin' && $rsvp->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized');
+        }
+
+        // Release the seat
+        if ($rsvp->seat) {
+            $rsvp->seat->update(['status' => 'available']);
+        }
+
+        // Update RSVP status
+        $rsvp->update(['status' => 'canceled']);
+
+        // Send cancellation email
+        try {
+            Mail::to($rsvp->guest_email ?? $rsvp->user->email)
+                ->send(new \App\Mail\RsvpCancelledMail($rsvp));
+        } catch (\Throwable $e) {
+            Log::error('RSVP Cancel Mail failed: ' . $e->getMessage());
+        }
+
+        return response()->json(['message' => 'RSVP cancelled successfully']);
     }
 }

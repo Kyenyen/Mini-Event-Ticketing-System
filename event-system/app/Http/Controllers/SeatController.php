@@ -10,7 +10,11 @@ class SeatController extends Controller
 {
     public function index(Event $event)
     {
-        return response()->json($event->seats()->get());
+        $seats = $event->seats()
+            ->select('id', 'label', 'status')
+            ->get();
+
+        return response()->json($seats);
     }
 
     // ✅ Admin: block a seat

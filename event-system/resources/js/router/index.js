@@ -6,7 +6,8 @@ import ChangePassword from '../pages/ChangePassword.vue'
 import EventsList from '../pages/EventsList.vue'
 import EventDetail from "../pages/EventDetail.vue";
 import AddEvent from '../pages/AddEvent.vue'
-import EditEvent from "@/pages/EditEvent.vue";
+import EditEvent from "../pages/EditEvent.vue";
+import RsvpList from '../pages/RSVPList.vue'
 
 const routes = [
   { path: '/', component: Home },
@@ -17,6 +18,7 @@ const routes = [
   { path: '/events/add-event', name: 'AddEvent', component: AddEvent },
   { path: '/events/:id', name: 'EventDetail', component: EventDetail },
   { path: "/events/:id/edit", component: EditEvent },
+  { path: '/my-rsvps', name: 'MyRsvps', component: RsvpList, meta: { requiresAuth: true } },
 ]
 
 export default createRouter({

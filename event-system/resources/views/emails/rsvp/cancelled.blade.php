@@ -1,9 +1,9 @@
 @component('mail::message')
-# 🎉 RSVP Confirmed!
+# ❌ RSVP Cancelled
 
 Hello {{ $userName }},
 
-Your RSVP for **{{ $eventTitle }}** has been successfully confirmed!
+Your RSVP for **{{ $eventTitle }}** has been **cancelled**.
 
 ---
 
@@ -11,11 +11,11 @@ Your RSVP for **{{ $eventTitle }}** has been successfully confirmed!
 - 📅 Date: {{ \Carbon\Carbon::parse($eventDate)->format('l, F j, Y') }}
 - 📍 Location: {{ $eventLocation }}
 - 🪑 Seat: {{ $seatLabel }}
-- 🏷️ Status: Confirmed
+- 🏷️ Status: Cancelled
 
 ---
 
-Thank you for joining us — we can’t wait to see you there!
+If this was a mistake or you’d like to rebook, please contact our support team.
 
 Regards,  
 **{{ config('app.name') }} Team**
