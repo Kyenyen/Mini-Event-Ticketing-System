@@ -27,7 +27,18 @@
           >
             My RSVPs
           </router-link>
+
+          <!-- Show "Manage RSVPs" only for admin -->
+          <router-link
+            v-if="user && user.role === 'admin'"
+            to="/admin/rsvps"
+            class="text-gray-600 hover:text-gray-900"
+          >
+            Manage RSVPs
+          </router-link>
         </div>
+
+        
 
         <!-- Right: Profile / Auth actions -->
         <div class="flex items-center space-x-4">

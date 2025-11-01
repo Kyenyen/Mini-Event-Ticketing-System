@@ -31,6 +31,7 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     Route::post('/events', [EventController::class, 'store']);
     Route::put('/events/{event}', [EventController::class, 'update']);
     Route::delete('/events/{event}', [EventController::class, 'destroy']);
+    Route::get('/admin/rsvps', [RsvpController::class, 'manage']);
     
     Route::put('/seats/{seat}/block', [SeatController::class, 'block']);
     Route::put('/seats/{seat}/unblock', [SeatController::class, 'unblock']);

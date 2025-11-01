@@ -37,23 +37,32 @@
             </div>
           </div>
 
-          <!-- Seat Grid -->
           <div v-if="rsvp.showSeats" class="mt-4">
-            <div class="grid grid-cols-8 gap-2">
-              <div
-                v-for="seat in rsvp.seats"
-                :key="seat.id"
-                class="p-2 rounded text-center text-xs cursor-default"
-                :class="{
-                  'bg-green-500 text-white': seat.status === 'available',
-                  'bg-gray-400 text-white': seat.status === 'booked',
-                  'bg-yellow-500 text-white': seat.id === rsvp.seat?.id
-                }"
-              >
-                {{ seat.label }}
-              </div>
+          <!-- Stage -->
+          <div class="bg-gray-800 text-white py-1 rounded text-center font-semibold text-sm mb-2">
+            🎭 STAGE
+          </div>
+
+          <!-- Seat Grid -->
+          <div class="grid grid-cols-10 gap-2 justify-center">
+            <div
+              v-for="seat in rsvp.seats"
+              :key="seat.id"
+              class="w-10 h-10 rounded flex items-center justify-center font-semibold border text-xs"
+              :class="seatClass(seat, rsvp)"
+            >
+              {{ seat.label }}
             </div>
           </div>
+
+          <!-- Legend -->
+          <div class="flex justify-center gap-6 text-xs mt-4 text-gray-600">
+            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-green-500 rounded"></span> Available</div>
+            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-blue-500 rounded"></span> Your Seat</div>
+            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-red-500 rounded"></span> Booked</div>
+            <div class="flex items-center gap-1"><span class="w-3 h-3 bg-yellow-400 rounded"></span> Blocked</div>
+          </div>
+        </div>
         </div>
       </div>
 
@@ -111,27 +120,51 @@ const toggleSeats = async (rsvp) => {
 }
 
 const cancelRsvp = async (id) => {
-  const result = await Swal.fire({
+  const confirm = await Swal.fire({
     title: 'Cancel RSVP?',
-    text: "Are you sure you want to cancel your RSVP?",
+    text: 'Are you sure you want to cancel the RSVP?',
     icon: 'warning',
     showCancelButton: true,
     confirmButtonText: 'Yes',
     cancelButtonText: 'No',
-    confirmButtonColor: '#3085d6',
-    cancelButtonColor: '#d33',
+  })
+  if (!confirm.isConfirmed) return
+
+  // 🔄 Show loading state
+  Swal.fire({
+    title: 'Canceling RSVP...',
+    text: 'Please wait a moment.',
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading()
+    },
   })
 
-  if (result.isConfirmed) {
-    try {
-      await axios.delete(`/rsvps/${id}`)
-      await fetchRsvps()
-      Swal.fire('Canceled!', 'Your RSVP has been canceled.', 'success')
-    } catch (error) {
-      console.error('Error canceling RSVP:', error)
-      Swal.fire('Error', 'Failed to cancel RSVP.', 'error')
-    }
+  try {
+    await axios.delete(`/rsvps/${id}`)
+    await fetchRsvps()
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Canceled!',
+      text: 'RSVP has been canceled.',
+      timer: 1500,
+      showConfirmButton: false,
+    })
+  } catch (error) {
+    console.error('Error canceling RSVP:', error)
+    Swal.fire('Error', 'Failed to cancel RSVP. Please try again.', 'error')
   }
+}
+
+function seatClass(seat, rsvp) {
+  const base = "transition w-10 h-10 flex items-center justify-center rounded font-semibold text-white";
+
+  if (seat.id === rsvp.seat?.id) return `${base} bg-blue-500`; // user's reserved seat
+  if (seat.status === "booked") return `${base} bg-red-500 cursor-not-allowed`;
+  if (seat.status === "blocked") return `${base} bg-yellow-400 text-black cursor-not-allowed`;
+  if (seat.status === "available") return `${base} bg-green-500`;
+  return `${base} bg-gray-300 text-gray-700`;
 }
 
 const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString()

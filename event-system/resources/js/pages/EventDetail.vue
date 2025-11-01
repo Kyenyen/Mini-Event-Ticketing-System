@@ -116,17 +116,47 @@ function editEvent() {
 }
 
 async function deleteEvent() {
-  if (!confirm("Are you sure you want to delete this event?")) return;
+  const confirmation = await Swal.fire({
+    title: 'Delete event?',
+    text: 'Are you sure you want to delete this event? This action cannot be undone.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete',
+    cancelButtonText: 'Cancel',
+  })
+  if (!confirmation.isConfirmed) return
+
   deleting.value = true;
+  Swal.fire({
+    title: 'Deleting...',
+    html: 'Please wait a moment.',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading(),
+  })
+
   try {
     await axios.delete(`http://127.0.0.1:8000/api/events/${event.value.id}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     });
-    alert("Event deleted successfully.");
-    router.push("/events");
+    Swal.close()
+    Swal.fire({
+      icon: 'success',
+      title: 'Deleted',
+      text: 'Event deleted successfully.',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 1600,
+    })
+    router.push('/events')
   } catch (error) {
     console.error(error);
-    alert(error.response?.data?.message || "Failed to delete event.");
+    Swal.close()
+    Swal.fire({
+      icon: 'error',
+      title: 'Delete failed',
+      text: error.response?.data?.message || 'Failed to delete event.',
+    })
   } finally {
     deleting.value = false;
   }
@@ -136,22 +166,61 @@ async function handleSeatSelected(seat) {
   try {
     const token = localStorage.getItem("token");
     if (!token) {
-      alert("Please log in to RSVP.");
-      router.push("/login");
-      return;
+      const res = await Swal.fire({
+        title: 'Not signed in',
+        text: 'You must be signed in to reserve a specific seat. Do you want to log in now?',
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: 'Go to Login',
+        cancelButtonText: 'Cancel',
+      })
+      if (res.isConfirmed) router.push('/login')
+      return
     }
 
+    // Confirm seat booking
+    const confirm = await Swal.fire({
+      title: `Confirm seat ${seat.label}?`,
+      text: 'This seat will be reserved for you.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, confirm',
+      cancelButtonText: 'Cancel',
+    })
+    if (!confirm.isConfirmed) return
+
+    // 🔄 Show progress
+    Swal.fire({
+      title: 'Booking seat...',
+      html: `Reserving seat <strong>${seat.label}</strong>. Please wait.`,
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    })
+
+    // Send request
     await axios.post(
       `http://127.0.0.1:8000/api/events/${event.value.id}/rsvp`,
       { seat_id: seat.id },
       { headers: { Authorization: `Bearer ${token}` } }
-    );
+    )
 
-    alert(`RSVP confirmed for seat ${seat.label}!`);
-    showSeatPicker.value = false;
+    // ✅ Success feedback
+    Swal.fire({
+      icon: 'success',
+      title: 'Seat Reserved!',
+      html: `You have successfully booked seat <strong>${seat.label}</strong>.`,
+      timer: 1800,
+      showConfirmButton: false,
+    })
+
+    showSeatPicker.value = false
   } catch (error) {
-    console.error(error);
-    alert(error.response?.data?.message || "Failed to RSVP.");
+    console.error(error)
+    Swal.fire({
+      icon: 'error',
+      title: 'Booking failed',
+      text: error.response?.data?.message || 'Failed to RSVP. Please try again.',
+    })
   }
 }
 

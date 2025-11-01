@@ -229,4 +229,33 @@ class RsvpController extends Controller
 
         return response()->json(['message' => 'RSVP cancelled successfully']);
     }
+
+    public function manage()
+    {
+        $rsvps = Rsvp::with(['event', 'seat', 'user'])
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($rsvp) {
+                return [
+                    'id' => $rsvp->id,
+                    'event' => [
+                        'id' => $rsvp->event->id ?? null,
+                        'title' => $rsvp->event->title ?? 'Unknown Event',
+                        'date' => $rsvp->event->date ?? null,
+                        'location' => $rsvp->event->location ?? null,
+                    ],
+                    'user' => [
+                        'name' => $rsvp->user->name ?? $rsvp->guest_name ?? 'Guest',
+                        'email' => $rsvp->user->email ?? $rsvp->guest_email ?? 'N/A',
+                    ],
+                    'seat' => [
+                        'label' => $rsvp->seat->label ?? 'N/A',
+                    ],
+                    'status' => $rsvp->status ?? 'active',
+                    'created_at' => $rsvp->created_at->toDateTimeString(),
+                ];
+            });
+
+        return response()->json($rsvps);
+    }
 }

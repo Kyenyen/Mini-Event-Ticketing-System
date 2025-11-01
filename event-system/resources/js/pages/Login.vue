@@ -63,6 +63,8 @@ async function login() {
     // Save the token and user, and update Pinia store so Navbar updates immediately
     localStorage.setItem("token", response.data.token);
     localStorage.setItem("user", JSON.stringify(response.data.user));
+    // store role for the router guard
+    localStorage.setItem("role", response.data.user.role ?? "user");
     auth.user = response.data.user; // <-- update store used by Navbar
 
     success.value = "Login successful! Redirecting...";
