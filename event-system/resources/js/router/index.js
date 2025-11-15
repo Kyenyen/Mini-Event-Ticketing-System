@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../pages/Login.vue'
 import Register from '../pages/Register.vue'
+import CalendarEvents from '../pages/Calendar.vue'
 import Home from '../pages/Home.vue'
 import ChangePassword from '../pages/ChangePassword.vue'
 import EventsList from '../pages/EventsList.vue'
@@ -15,6 +16,7 @@ const routes = [
   { path: '/', component: Home },
   { path: '/login', component: Login },
   { path: '/register', component: Register },
+  { path: '/calendar-events', component: CalendarEvents },
   { path: '/change-password', component: ChangePassword, meta: { requiresAuth: true } },
   { path: '/events', name: 'Events', component: EventsList },
   { path: '/events/add-event', name: 'AddEvent', component: AddEvent, meta: { requiresAuth: true, role: 'admin' } },

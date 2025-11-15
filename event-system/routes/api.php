@@ -13,6 +13,7 @@ Route::post('/login', [AuthController::class, 'login']);
 // 🧍 Protected user routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
+    Route::get('/calendar-events', [EventController::class, 'index']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/change-password', [AuthController::class, 'changePassword']);
 

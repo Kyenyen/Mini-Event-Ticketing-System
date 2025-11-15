@@ -19,6 +19,13 @@
           <router-link to="/" class="text-gray-600 hover:text-gray-900">Home</router-link>
           <router-link to="/events" class="text-gray-600 hover:text-gray-900">Events</router-link>
 
+          <router-link v-if="user && (user.role === 'user' || user.role === 'admin')" 
+          to="/calendar-events" 
+          class="text-gray-600 hover:text-gray-900"
+          >
+          Calendar
+        </router-link>
+
           <!-- Show "My RSVPs" only for regular users -->
           <router-link
             v-if="user && user.role === 'user'"

@@ -30,7 +30,8 @@ class EventController extends Controller
     // ✅ List all events (for everyone)
     public function index()
     {
-        return Event::all();
+        $events = Event::all(['id', 'title', 'date', 'location', 'capacity']);
+        return response()->json($events);
     }
 
     // ✅ Show single event details
@@ -77,5 +78,20 @@ class EventController extends Controller
 
             $seatNum++;
         }
+    }
+
+    public function calendarEvents(Request $request)
+    {
+        $user = $request->user();
+
+        // Admin → return ALL events
+        if ($user->role === 'admin') {
+            return Event::all();
+        }
+
+        // User → return only events they RSVP'd
+        return Event::whereHas('rsvps', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->get();
     }
 }
