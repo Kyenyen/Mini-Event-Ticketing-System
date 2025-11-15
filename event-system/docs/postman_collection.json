@@ -1,0 +1,148 @@
+{
+    "info": {
+        "name": "Mini Event Ticketing API",
+        "_postman_id": "00000000-0000-0000-0000-000000000000",
+        "description": "Minimal collection for testing the Event Ticketing API",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Get CSRF Cookie",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://127.0.0.1:8000/sanctum/csrf-cookie",
+                    "protocol": "http",
+                    "host": [
+                        "127",
+                        "0",
+                        "0",
+                        "1"
+                    ],
+                    "port": "8000",
+                    "path": [
+                        "sanctum",
+                        "csrf-cookie"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Register (example)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{ \"name\": \"devuser\", \"email\": \"dev+1@example.com\", \"password\": \"password\", \"password_confirmation\": \"password\" }"
+                },
+                "url": {
+                    "raw": "http://127.0.0.1:8000/api/register",
+                    "protocol": "http",
+                    "host": [
+                        "127",
+                        "0",
+                        "0",
+                        "1"
+                    ],
+                    "port": "8000",
+                    "path": [
+                        "api",
+                        "register"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Login (example)",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{ \"email\": \"a1@gmail.com\", \"password\": \"12345678\" }"
+                },
+                "url": {
+                    "raw": "http://127.0.0.1:8000/api/login",
+                    "protocol": "http",
+                    "host": [
+                        "127",
+                        "0",
+                        "0",
+                        "1"
+                    ],
+                    "port": "8000",
+                    "path": [
+                        "api",
+                        "login"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "List Events",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://127.0.0.1:8000/api/events",
+                    "protocol": "http",
+                    "host": [
+                        "127",
+                        "0",
+                        "0",
+                        "1"
+                    ],
+                    "port": "8000",
+                    "path": [
+                        "api",
+                        "events"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "Get Event Seats",
+            "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "http://127.0.0.1:8000/api/events/13/seats",
+                    "protocol": "http",
+                    "host": [
+                        "127",
+                        "0",
+                        "0",
+                        "1"
+                    ],
+                    "port": "8000",
+                    "path": [
+                        "api",
+                        "events",
+                        "13",
+                        "seats"
+                    ]
+                }
+            }
+        }
+    ]
+}
