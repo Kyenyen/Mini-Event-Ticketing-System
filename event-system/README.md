@@ -51,6 +51,55 @@ Prerequisites:
 
 	php artisan serve
 
+### Using XAMPP (Windows)
+
+If you use XAMPP for local development (Apache + MySQL/MariaDB), here are quick steps and recommended `.env` settings.
+
+1. Start XAMPP services
+
+Open the XAMPP Control Panel and start `Apache` and `MySQL` (or `MariaDB`). By default MySQL runs on port 3306.
+
+2. Create or import the database
+
+- Use phpMyAdmin (http://localhost/phpmyadmin) to create a database (e.g. `event_system`) and import the `event_system.sql` file from the project root, or use the MySQL CLI:
+
+```powershell
+# create database (if needed)
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS event_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+# import SQL dump (run from project root)
+mysql -u root -p event_system < ..\event_system.sql
+```
+
+Note: XAMPP's default MySQL user is `root` with an empty password unless you changed it. If you set a password, use it with `-p` when prompted, or pass it as `-pYourPassword` (not recommended on shared machines).
+
+3. Configure `.env`
+
+Set database values to match XAMPP defaults in your project `.env` file:
+
+```
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=event_system
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+4. Run migrations/seeders (optional)
+
+If you prefer Laravel migrations/seeders instead of importing the dump, run:
+
+```powershell
+php artisan migrate --seed
+```
+
+5. Troubleshooting
+
+- If the SQL import fails due to upload size limits in phpMyAdmin, either increase `upload_max_filesize`/`post_max_size` in `php.ini` or use the `mysql` CLI import shown above.
+- If MySQL won't start in XAMPP, ensure no other service is using port 3306 (sometimes other MySQL installs or Docker can conflict).
+- If you changed MySQL credentials, update `.env` accordingly and run `php artisan config:clear`.
+
+
 Open the SPA URL from Vite (usually http://localhost:5173) or the Laravel served URL (http://127.0.0.1:8000) depending on your setup.
 
 ## Test accounts (development)
