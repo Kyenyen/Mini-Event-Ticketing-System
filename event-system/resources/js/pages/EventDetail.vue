@@ -27,8 +27,8 @@
 
     <!-- Event Info -->
     <div>
-      <h2 class="text-3xl font-semibold mb-2">{{ event.title }}</h2>
-      <p class="text-gray-600 mb-4">{{ event.description }}</p>
+      <h2 class="text-3xl font-semibold mb-2 text-blue-600">{{ event.title }}</h2>
+      <p class="text-blue-600 mb-4">{{ event.description }}</p>
 
       <div class="text-sm text-gray-500 mb-6 space-y-1">
         <p>📅 <strong>Date:</strong> {{ formattedDate }}</p>
@@ -39,9 +39,10 @@
 
     <!-- Seat Management or RSVP -->
     <div class="flex justify-center items-center">
-    <!-- User or Guest RSVP -->
-    <div class="space-y-4 w-full text-center">
+  <!-- User or Guest RSVP -->
+  <div v-if="user?.role !== 'admin'" class="space-y-4 w-full text-center">
       <button
+        v-if="user?.role !== 'admin'"
         @click="handleRsvpClick"
         class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
       >

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\RsvpConfirmedMail;
 use App\Models\Rsvp;
@@ -29,61 +30,131 @@ class RsvpController extends Controller
             return response()->json(['message' => 'Seat already taken'], 400);
         }
 
-        // 🧾 Mark seat as processing temporarily to prevent race conditions
+        // Mark seat as processing to avoid races
         $seat->update(['status' => 'processing']);
 
+        DB::beginTransaction();
         try {
             if (Auth::check()) {
-                // 🧍‍♂️ Logged-in user RSVP
-                $user = Auth::user(); // ✅ define the variable first
+                // Authenticated user flow — ensure only one RSVP per event per user
+                $user = Auth::user();
 
-                $rsvp = Rsvp::updateOrCreate(
-                    ['event_id' => $event->id, 'user_id' => $user->id],
-                    [
+                // Try to find existing RSVP for this user+event (including canceled)
+                $existing = Rsvp::where('event_id', $event->id)
+                    ->where('user_id', $user->id)
+                    ->first();
+
+                if ($existing) {
+                    // If user already has a confirmed RSVP for this event, do not change it.
+                    if ($existing->status === 'confirmed') {
+                        // Release temporary processing flag and abort
+                        $seat->update(['status' => 'available']);
+                        DB::rollBack();
+                        return response()->json(['message' => 'You already have an RSVP for this event'], 400);
+                    }
+
+                    // If RSVP exists but is canceled (or not confirmed), we will reuse that record and confirm it.
+                    // Release any previously assigned seat for that RSVP (if present)
+                    if ($existing->seat) {
+                        $existing->seat->update(['status' => 'available']);
+                    }
+
+                    $existing->update([
                         'seat_id' => $seat->id,
-                        'email' => $user->email, // ✅ store user’s email
+                        'email' => $user->email,
                         'status' => 'confirmed',
-                    ]
-                );
+                    ]);
+
+                    // mark seat booked
+                    $seat->update(['status' => 'booked']);
+
+                    $rsvp = $existing->fresh();
+                } else {
+                    // Create a new RSVP for the user
+                    $rsvp = Rsvp::create([
+                        'event_id' => $event->id,
+                        'user_id' => $user->id,
+                        'seat_id' => $seat->id,
+                        'email' => $user->email,
+                        'status' => 'confirmed',
+                    ]);
+
+                    // mark seat booked
+                    $seat->update(['status' => 'booked']);
+                }
+
+                // Optionally send confirmation email for logged-in users
+                try {
+                    Mail::to($rsvp->email)->send(new RsvpConfirmedMail($rsvp));
+                } catch (\Throwable $e) {
+                    Log::error('RSVP Mail failed: ' . $e->getMessage());
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'message' => 'RSVP confirmed and seat booked',
+                    'rsvp' => $rsvp,
+                    'seat' => $seat,
+                ]);
             } else {
-                // 🧍 Guest RSVP
+                // Guest flow (kept as-is / reuse canceled rows handled elsewhere)
                 $request->validate([
                     'guest_name' => 'required|string|max:255',
                     'guest_email' => 'required|email|max:255',
                 ]);
 
-                $rsvp = Rsvp::updateOrCreate(
-                    ['event_id' => $event->id, 'guest_email' => $request->guest_email],
-                    [
+                // Look for an existing RSVP for this guest (may be canceled)
+                $existingGuest = $event->rsvps()->where('guest_email', $request->guest_email)->first();
+                if ($existingGuest && $existingGuest->status === 'confirmed') {
+                    // Release processing flag
+                    $seat->update(['status' => 'available']);
+                    DB::rollBack();
+                    return response()->json(['message' => 'You already RSVP’d for this event'], 400);
+                }
+
+                if ($existingGuest && $existingGuest->status === 'canceled') {
+                    // reuse canceled row
+                    if ($existingGuest->seat) {
+                        $existingGuest->seat->update(['status' => 'available']);
+                    }
+
+                    $existingGuest->update([
                         'guest_name' => $request->guest_name,
                         'seat_id' => $seat->id,
                         'status' => 'confirmed',
-                    ]
-                );
+                    ]);
+                    $seat->update(['status' => 'booked']);
+                    $rsvp = $existingGuest->fresh();
+                } else {
+                    $rsvp = $event->rsvps()->create([
+                        'guest_name' => $request->guest_name,
+                        'guest_email' => $request->guest_email,
+                        'seat_id' => $seat->id,
+                        'status' => 'confirmed',
+                    ]);
+                    $seat->update(['status' => 'booked']);
+                }
+
+                try {
+                    Mail::to($rsvp->guest_email)->send(new RsvpConfirmedMail($rsvp));
+                } catch (\Throwable $e) {
+                    Log::error('Guest RSVP Mail failed: ' . $e->getMessage());
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'message' => 'RSVP successful! Seat assigned automatically.',
+                    'seat' => $rsvp->seat,
+                    'seat_number' => $rsvp->seat->label,
+                ], 201);
             }
-
-            // ✅ Mark seat as booked once RSVP succeeds
-            $seat->update(['status' => 'booked']);
-
-            // 📧 Send confirmation email
-            try {
-                Mail::to($rsvp->guest_email ?? $rsvp->email)
-                    ->send(new RsvpConfirmedMail($rsvp));
-            } catch (\Throwable $e) {
-                Log::error('RSVP Mail failed: ' . $e->getMessage());
-            }
-
-            return response()->json([
-                'message' => 'RSVP confirmed and seat booked',
-                'rsvp' => $rsvp,
-                'seat' => $seat,
-            ]);
-
         } catch (\Throwable $e) {
-            // Rollback seat if anything fails
+            DB::rollBack();
+            // restore seat if failed
             $seat->update(['status' => 'available']);
             Log::error('RSVP failed: ' . $e->getMessage());
-
             return response()->json(['message' => 'RSVP failed, please try again'], 500);
         }
     }
@@ -96,54 +167,74 @@ class RsvpController extends Controller
         ]);
 
         // Check if event is full
-        $bookedCount = $event->rsvps()->count();
+        $bookedCount = $event->rsvps()->where('status', 'confirmed')->count();
         if ($bookedCount >= $event->capacity) {
             return response()->json(['message' => 'Event is full'], 400);
         }
 
-        // Ensure guest not already RSVP'd
-        // rsvps table stores guest emails in 'guest_email'
+        // Look for an existing RSVP for this guest (may be canceled)
         $existing = $event->rsvps()->where('guest_email', $validated['email'])->first();
-        if ($existing) {
+        if ($existing && $existing->status === 'confirmed') {
             return response()->json(['message' => 'You already RSVP’d for this event'], 400);
         }
 
         // Find first available seat
         $seat = $event->seats()
-        ->where('status', 'available')
-        ->inRandomOrder()
-        ->first();
+            ->where('status', 'available')
+            ->inRandomOrder()
+            ->first();
 
         if (!$seat) {
             return response()->json(['message' => 'No available seats left'], 400);
         }
 
-        // Reserve the seat
-        $seat->update(['status' => 'booked']);
-
-        // Create RSVP and attach seat_id
-        $rsvp = $event->rsvps()->create([
-            'guest_name' => $validated['name'],
-            'guest_email' => $validated['email'],
-            'seat_id' => $seat->id,
-            'status' => 'confirmed',
-        ]);
-
-        // make sure seat relation is available immediately
-        $rsvp->load('seat');
-
-        // Send confirmation email
+    DB::beginTransaction();
         try {
-            Mail::to($validated['email'])->send(new RsvpConfirmedMail($rsvp));
-        } catch (\Throwable $e) {
-            Log::error('Guest RSVP Mail failed: ' . $e->getMessage());
-        }
+            // Reserve the seat
+            $seat->update(['status' => 'booked']);
 
-        return response()->json([
-            'message' => 'RSVP successful! Seat assigned automatically.',
-            'seat' => $rsvp->seat,
-            'seat_number' => $rsvp->seat->label,
-        ], 201);
+            if ($existing && $existing->status === 'canceled') {
+                // Reuse canceled RSVP record (avoids DB unique constraint)
+                $existing->update([
+                    'guest_name' => $validated['name'],
+                    'seat_id' => $seat->id,
+                    'status' => 'confirmed',
+                ]);
+                $rsvp = $existing->fresh();
+            } else {
+                // Create new RSVP
+                $rsvp = $event->rsvps()->create([
+                    'guest_name' => $validated['name'],
+                    'guest_email' => $validated['email'],
+                    'seat_id' => $seat->id,
+                    'status' => 'confirmed',
+                ]);
+            }
+
+            // make sure seat relation is available immediately
+            $rsvp->load('seat');
+
+            // Send confirmation email
+            try {
+                Mail::to($validated['email'])->send(new RsvpConfirmedMail($rsvp));
+            } catch (\Throwable $e) {
+                Log::error('Guest RSVP Mail failed: ' . $e->getMessage());
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'RSVP successful! Seat assigned automatically.',
+                'seat' => $rsvp->seat,
+                'seat_number' => $rsvp->seat->label,
+            ], 201);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            // restore seat if failed
+            $seat->update(['status' => 'available']);
+            Log::error('Guest RSVP transaction failed: ' . $e->getMessage());
+            return response()->json(['message' => 'RSVP failed, please try again'], 500);
+        }
     }
 
     public function index(Request $request)

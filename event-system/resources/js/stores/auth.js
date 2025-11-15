@@ -3,19 +3,15 @@ import axios from '../axios'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: JSON.parse(localStorage.getItem('user')) || null, // load from localStorage
+    user: JSON.parse(localStorage.getItem('user')) || null,
     token: localStorage.getItem('token') || null,
   }),
 
   actions: {
     async getUser() {
       try {
-        const token = localStorage.getItem('token')
-        if (!token) return
-
-        const response = await axios.get('http://127.0.0.1:8000/api/user', {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        // Try to fetch current user. Allow cookie-based Sanctum auth (no token required).
+        const response = await axios.get('/api/user')
         this.user = response.data
         localStorage.setItem('user', JSON.stringify(this.user))
       } catch (err) {
@@ -36,7 +32,9 @@ export const useAuthStore = defineStore('auth', {
         if (error.response && error.response.status === 401) {
           return { success: false, message: 'Invalid email or password.' }
         }
-        return { success: false, message: 'Something went wrong.' }
+        // prefer server-provided message if available
+        const msg = error.response?.data?.message || 'Something went wrong.'
+        return { success: false, message: msg }
       }
     },
 
@@ -47,19 +45,44 @@ export const useAuthStore = defineStore('auth', {
         await this.getUser()
         return { success: true }
       } catch (error) {
+        // Validation errors
         if (error.response && error.response.status === 422) {
           return { success: false, errors: error.response.data.errors }
         }
-        return { success: false, message: 'Something went wrong.' }
+        // Conflict (duplicate) or other server message
+        const serverMsg = error.response?.data?.message || ''
+        // normalize body to string for pattern checks (some servers return HTML/text on 500)
+        const bodyStr = typeof error.response?.data === 'string' ? error.response.data : JSON.stringify(error.response?.data || '')
+
+        // If server reports a duplicate/conflict, return it as an email field error so the form highlights it
+        if (error.response && (
+          error.response.status === 409 ||
+          /duplicate|already exists|already exist|unique|1062/i.test(serverMsg) ||
+          /duplicate|unique|1062|duplicate entry/i.test(bodyStr)
+        )) {
+          const messageText = serverMsg || (bodyStr.match(/Duplicate entry.+for key '([^']+)'/)?.[0]) || 'This email is already registered.'
+          return { success: false, errors: { email: [messageText] } }
+        }
+
+        const msg = serverMsg || 'Something went wrong.'
+        return { success: false, message: msg }
       }
     },
 
     async logout() {
       try {
-        await axios.post('/api/logout')
+        // attempt server logout but do not rely on it to clear local state
+        await axios.post('/logout')
+      } catch (err) {
+        // ignore network errors, still clear client state
+        console.warn('Logout request failed', err)
+      } finally {
+        // clear Pinia state and persisted storage
         this.user = null
-      } catch {
-        console.log('Logout failed')
+        this.token = null
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        localStorage.removeItem('role')
       }
     },
   },

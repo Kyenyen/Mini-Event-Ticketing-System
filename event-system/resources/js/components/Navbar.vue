@@ -150,9 +150,8 @@ function handleOutsideClick(e) {
 }
 
 async function handleLogout() {
+  // central logout clears both store and localStorage
   await auth.logout().catch(() => {})
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
   open.value = false
   router.push('/login')
 }

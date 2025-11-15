@@ -49,7 +49,7 @@
 
       <button
         @click="router.push('/events')"
-        class="bg-gray-300 px-6 py-2 rounded hover:bg-gray-400 transition"
+        class="bg-gray-300 text-gray-900 font-semibold px-6 py-2 rounded hover:bg-gray-400 transition"
       >
         Cancel
       </button>
@@ -67,7 +67,8 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import axios from "axios";
+import axios from '@/axios'
+import Swal from 'sweetalert2'
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 
@@ -84,18 +85,24 @@ const loading = ref(false);
 // ✅ Fetch all seats
 async function fetchSeats() {
   try {
-    const res = await axios.get(`http://127.0.0.1:8000/api/events/${route.params.id}/seats`);
+    const res = await axios.get(`/api/events/${route.params.id}/seats`);
     seats.value = res.data;
   } catch (err) {
     console.error("Failed to fetch seats:", err);
+    Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load seats.' })
   }
 }
 
 // ✅ Fetch event & seats on mount
 onMounted(async () => {
-  const eventRes = await axios.get(`http://127.0.0.1:8000/api/events/${route.params.id}`);
-  event.value = eventRes.data;
-  await fetchSeats();
+  try {
+    const eventRes = await axios.get(`/api/events/${route.params.id}`);
+    event.value = eventRes.data;
+    await fetchSeats();
+  } catch (err) {
+    console.error('Failed to load event:', err)
+    Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to load event.' })
+  }
 });
 
 // ✅ Format readable date
@@ -129,19 +136,28 @@ function seatButtonClass(seat) {
 // ✅ Admin seat toggle
 async function handleSeatClick(seat) {
   if (user.value?.role === "admin") {
+    // confirm block/unblock
+    const action = seat.status === "blocked" ? "unblock" : "block";
+    const confirm = await Swal.fire({
+      title: `${action === 'block' ? 'Block' : 'Unblock'} seat ${seat.label}?`,
+      text: `Are you sure you want to ${action} this seat?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: action === 'block' ? 'Yes, block' : 'Yes, unblock',
+    })
+    if (!confirm.isConfirmed) return
+
     try {
+      Swal.fire({ title: `${action === 'block' ? 'Blocking' : 'Unblocking'}...`, allowOutsideClick: false, didOpen: () => Swal.showLoading() })
       const token = localStorage.getItem("token");
-      const action = seat.status === "blocked" ? "unblock" : "block";
-      await axios.put(
-        `http://127.0.0.1:8000/api/seats/${seat.id}/${action}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.put(`/api/seats/${seat.id}/${action}`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      Swal.close()
       await fetchSeats(); // refresh seat grid
-      alert(`Seat ${seat.label} ${action === "block" ? "blocked" : "unblocked"} successfully.`);
+      Swal.fire({ icon: 'success', title: 'Updated', text: `Seat ${seat.label} ${action === 'block' ? 'blocked' : 'unblocked'}.`, toast: true, position: 'top-end', timer: 1400, showConfirmButton: false })
     } catch (error) {
       console.error("Failed to update seat:", error);
-      alert("Failed to change seat status.");
+      Swal.close()
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to change seat status.' })
     }
   } else {
     if (seat.status !== "available") return;
@@ -151,21 +167,30 @@ async function handleSeatClick(seat) {
 
 // ✅ RSVP for normal users
 async function confirmRsvp() {
-  if (!selectedSeat.value) return alert("Please select a seat first.");
+  if (!selectedSeat.value) return Swal.fire({ icon: 'error', title: 'Select a seat', text: 'Please select a seat first.' })
+
+  const confirm = await Swal.fire({
+    title: `Confirm seat ${selectedSeat.value.label}?`,
+    text: 'This seat will be reserved for you.',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, confirm',
+  })
+  if (!confirm.isConfirmed) return
+
   loading.value = true;
   try {
+    Swal.fire({ title: 'Booking seat...', html: `Reserving seat <strong>${selectedSeat.value.label}</strong>. Please wait.`, allowOutsideClick: false, didOpen: () => Swal.showLoading() })
     const token = localStorage.getItem("token");
-    await axios.post(
-      `http://127.0.0.1:8000/api/events/${event.value.id}/rsvp`,
-      { seat_id: selectedSeat.value.id },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    alert(`🎟️ Seat ${selectedSeat.value.label} confirmed!`);
+    await axios.post(`/api/events/${event.value.id}/rsvp`, { seat_id: selectedSeat.value.id }, { headers: { Authorization: `Bearer ${token}` } });
+    Swal.close()
+    Swal.fire({ icon: 'success', title: 'Seat Reserved!', html: `You have successfully booked seat <strong>${selectedSeat.value.label}</strong>.`, timer: 1800, showConfirmButton: false })
     await fetchSeats(); // refresh after booking
     router.push("/events");
   } catch (error) {
     console.error(error);
-    alert(error.response?.data?.message || "Failed to RSVP.");
+    Swal.close()
+    Swal.fire({ icon: 'error', title: 'Booking failed', text: error.response?.data?.message || 'Failed to RSVP.' })
   } finally {
     loading.value = false;
   }

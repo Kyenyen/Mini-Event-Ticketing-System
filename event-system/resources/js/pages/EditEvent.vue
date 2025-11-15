@@ -1,10 +1,10 @@
 <template>
   <div class="max-w-lg mx-auto mt-10 bg-white p-6 rounded-lg shadow-md">
-    <h2 class="text-2xl font-semibold mb-6 text-center">Edit Event</h2>
+    <h2 class="text-2xl font-semibold mb-6 text-center text-blue-600">Edit Event</h2>
 
     <form @submit.prevent="updateEvent" class="space-y-4">
       <div>
-        <label class="block mb-1 font-medium">Title</label>
+        <label class="block mb-1 font-medium text-blue-600">Title</label>
         <input
           v-model="form.title"
           type="text"
@@ -14,7 +14,7 @@
       </div>
 
       <div>
-        <label class="block mb-1 font-medium">Description</label>
+        <label class="block mb-1 font-medium text-blue-600">Description</label>
         <textarea
           v-model="form.description"
           required
@@ -23,7 +23,7 @@
       </div>
 
       <div>
-        <label class="block mb-1 font-medium">Date</label>
+        <label class="block mb-1 font-medium text-blue-600">Date</label>
         <input
           v-model="form.date"
           type="date"
@@ -34,7 +34,7 @@
       </div>
 
       <div>
-        <label class="block mb-1 font-medium">Location</label>
+        <label class="block mb-1 font-medium text-blue-600">Location</label>
         <input
           v-model="form.location"
           type="text"

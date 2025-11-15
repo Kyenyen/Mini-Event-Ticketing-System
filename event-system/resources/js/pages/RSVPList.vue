@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6 max-w-4xl mx-auto">
+  <div class="p-6 max-w-4xl mx-auto text-blue-600">
     <h2 class="text-2xl font-semibold mb-6">My RSVPs</h2>
 
     <div v-if="loading" class="text-gray-500">Loading RSVPs...</div>
@@ -16,7 +16,7 @@
             <div>
               <h3 class="text-lg font-semibold">{{ rsvp.event.title }}</h3>
               <p class="text-gray-600 text-sm">{{ formatDate(rsvp.event.date) }}</p>
-              <p class="text-sm mt-1">Seat: {{ rsvp.seat?.label || 'N/A' }}</p>
+              <p class="text-sm text-gray-600 mt-1">Seat: {{ rsvp.seat?.label || 'N/A' }}</p>
               <p class="text-sm text-gray-500">Status: {{ rsvp.status }}</p>
             </div>
 
@@ -71,9 +71,9 @@
         <h3 class="text-lg font-semibold mt-8 mb-3 text-red-600">Canceled RSVPs</h3>
         <div v-for="rsvp in cancelledRsvps" :key="rsvp.id" class="border rounded-xl p-4 bg-gray-50 shadow-sm mb-4 opacity-75">
           <div>
-            <h3 class="text-lg font-semibold line-through">{{ rsvp.event.title }}</h3>
-            <p class="text-gray-600 text-sm">{{ formatDate(rsvp.event.date) }}</p>
-            <p class="text-sm mt-1">Seat: {{ rsvp.seat?.label || 'N/A' }}</p>
+            <h3 class="text-lg font-semibold text-gray-500">{{ rsvp.event.title }}</h3>
+            <p class="text-gray-500 text-sm">{{ formatDate(rsvp.event.date) }}</p>
+            <p class="text-gray-500 text-sm mt-1">Seat: {{ rsvp.seat?.label || 'N/A' }}</p>
             <p class="text-sm text-gray-500">Status: {{ rsvp.status }}</p>
           </div>
         </div>
@@ -92,7 +92,7 @@ const loading = ref(true)
 
 const fetchRsvps = async () => {
   try {
-    const response = await axios.get('/rsvps')
+    const response = await axios.get('/api/rsvps')
     rsvps.value = response.data.map(r => ({
       ...r,
       showSeats: false,
@@ -110,8 +110,8 @@ const toggleSeats = async (rsvp) => {
     rsvp.showSeats = false
     return
   }
-  try {
-    const res = await axios.get(`/events/${rsvp.event.id}/seats`)
+    try {
+    const res = await axios.get(`/api/events/${rsvp.event.id}/seats`)
     rsvp.seats = res.data
     rsvp.showSeats = true
   } catch (error) {
@@ -141,7 +141,7 @@ const cancelRsvp = async (id) => {
   })
 
   try {
-    await axios.delete(`/rsvps/${id}`)
+  await axios.delete(`/api/rsvps/${id}`)
     await fetchRsvps()
 
     Swal.fire({

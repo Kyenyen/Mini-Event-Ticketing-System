@@ -1,13 +1,13 @@
 <template>
-  <div class="p-6 max-w-6xl mx-auto">
-    <h2 class="text-2xl font-semibold mb-6">Manage RSVPs</h2>
+  <div class="p-6 max-w-6xl mx-auto text-blue-600">
+    <h2 class="text-2xl font-semibold mb-6 ">Manage RSVPs</h2>
 
-    <div v-if="loading" class="text-gray-500">Loading all RSVPs...</div>
+    <div v-if="loading" class="">Loading all RSVPs...</div>
 
     <div v-else>
       <!-- Active RSVPs -->
-      <h3 class="text-xl font-semibold mt-4 mb-2">🟢 Active RSVPs</h3>
-      <div v-if="activeRsvps.length === 0" class="text-gray-500 mb-6">
+      <h3 class="text-xl font-semibold mt-4 mb-2 text-green-600">🟢 Active RSVPs</h3>
+      <div v-if="activeRsvps.length === 0" class=" mb-6">
         No active RSVPs found.
       </div>
 
@@ -18,7 +18,7 @@
           class="border rounded-lg p-4 flex justify-between bg-white shadow-sm"
         >
           <div>
-            <h4 class="font-semibold text-lg">{{ rsvp.event.title }}</h4>
+            <h4 class="font-semibold text-lg ">{{ rsvp.event.title }}</h4>
             <p class="text-sm text-gray-600">
               {{ formatDate(rsvp.event.date) }} | Seat: {{ rsvp.seat.label }}
             </p>
@@ -39,8 +39,8 @@
       </div>
 
       <!-- Canceled RSVPs -->
-      <h3 class="text-xl font-semibold mt-8 mb-2">🔴 Canceled RSVPs</h3>
-      <div v-if="canceledRsvps.length === 0" class="text-gray-500">
+      <h3 class="text-xl font-semibold mt-8 mb-2 text-red-600">🔴 Canceled RSVPs</h3>
+      <div v-if="canceledRsvps.length === 0" class="text-blue-600">
         No canceled RSVPs.
       </div>
 
@@ -77,7 +77,7 @@ const loading = ref(true)
 
 const fetchRsvps = async () => {
   try {
-    const response = await axios.get('/admin/rsvps')
+    const response = await axios.get('/api/admin/rsvps')
     rsvps.value = response.data
   } catch (error) {
     console.error('Error loading RSVPs:', error)
@@ -108,7 +108,8 @@ const cancelRsvp = async (id) => {
   })
 
   try {
-    await axios.delete(`/rsvps/${id}`)
+      // use the API prefix so route model binding + auth middleware run
+      await axios.delete(`/api/rsvps/${id}`)
     await fetchRsvps()
 
     Swal.fire({

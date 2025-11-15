@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-6xl mx-auto mt-10 p-6 bg-white rounded-lg shadow">
+  <div class="max-w-6xl mx-auto mt-10 p-6 bg-white rounded-lg shadow-md text-blue-600">
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-2xl font-semibold">Upcoming Events</h2>
 
@@ -18,13 +18,13 @@
       <div
         v-for="event in events"
         :key="event.id"
-        class="border rounded-lg p-4 shadow-sm hover:shadow-md transition cursor-pointer"
+        class="border rounded-lg p-4 shadow-sm hover:shadow-md transition cursor-pointer bg-white"
         @click="router.push(`/events/${event.id}`)"
       >
-        <h3 class="text-lg font-semibold mb-2">{{ event.title }}</h3>
-        <p class="text-gray-600 mb-3 line-clamp-2">{{ event.description }}</p>
+        <h3 class="text-lg font-semibold mb-2 text-blue-600">{{ event.title }}</h3>
+        <p class=" mb-3 line-clamp-2 text-blue-600">{{ event.description }}</p>
 
-        <div class="text-sm text-gray-500 space-y-1">
+  <div class="text-sm text-gray-500 space-y-1">
           <p>
             📅 <strong>Date:</strong> {{ formatDate(event.date) }}
           </p>
@@ -38,7 +38,7 @@
           <div class="flex justify-between items-center">
           <router-link
             :to="`/events/${event.id}`"
-            class="text-blue-600 hover:underline"
+            class="text-blue-400 hover:underline"
           >
             View Details
           </router-link>
@@ -46,7 +46,7 @@
       </div>
     </div>
 
-    <div v-else class="text-center text-gray-500 py-10">
+    <div v-else class="text-center text-gray-400 py-10">
       No events available.
     </div>
   </div>
@@ -54,7 +54,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import axios from "axios";
+import axios from '@/axios'
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../stores/auth";
 
@@ -64,7 +64,7 @@ const auth = useAuthStore();
 const user = computed(() => auth.user);
 
 onMounted(async () => {
-  const { data } = await axios.get("http://127.0.0.1:8000/api/events");
+  const { data } = await axios.get('/api/events');
   events.value = data;
 });
 

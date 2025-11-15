@@ -1,10 +1,10 @@
 <template>
   <div class="max-w-md mx-auto p-6 bg-white rounded-lg shadow-md mt-10">
-    <h2 class="text-2xl font-semibold mb-4 text-center">Login</h2>
+    <h2 class="text-2xl font-semibold mb-4 text-center text-blue-600">Login</h2>
 
     <form @submit.prevent="login">
       <div class="mb-4">
-        <label class="block mb-1 font-medium">Email</label>
+        <label class="block mb-1 font-medium text-blue-600">Email</label>
         <input
           v-model="form.email"
           type="email"
@@ -14,7 +14,7 @@
       </div>
 
       <div class="mb-4">
-        <label class="block mb-1 font-medium">Password</label>
+        <label class="block mb-1 font-medium text-blue-600">Password</label>
         <input
           v-model="form.password"
           type="password"

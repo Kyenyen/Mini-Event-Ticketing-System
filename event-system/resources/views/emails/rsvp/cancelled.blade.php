@@ -18,5 +18,5 @@ Your RSVP for **{{ $eventTitle }}** has been **cancelled**.
 If this was a mistake or you’d like to rebook, please contact our support team.
 
 Regards,  
-**{{ config('app.name') }} Team**
+**EventTicket Team**
 @endcomponent

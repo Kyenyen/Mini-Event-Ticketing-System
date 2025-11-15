@@ -16,7 +16,7 @@ class EventController extends Controller
             'description' => 'nullable|string',
             'date' => 'required|date',
             'location' => 'required|string|max:255',
-            'capacity' => 'required|integer|min:10|max:100',
+            'capacity' => 'required|integer|min:1|max:100',
         ]);
 
         $event = Event::create($validated);

@@ -18,5 +18,5 @@ Your RSVP for **{{ $eventTitle }}** has been successfully confirmed!
 Thank you for joining us — we can’t wait to see you there!
 
 Regards,  
-**{{ config('app.name') }} Team**
+**EventTicket Team**
 @endcomponent
